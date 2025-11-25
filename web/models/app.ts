@@ -1,8 +1,10 @@
 import type {
   AliyunConfig,
   ArizeConfig,
+  DatabricksConfig,
   LangFuseConfig,
   LangSmithConfig,
+  MLflowConfig,
   OpikConfig,
   PhoenixConfig,
   TencentConfig,
@@ -133,7 +135,7 @@ export type TracingStatus = {
 
 export type TracingConfig = {
   tracing_provider: TracingProvider
-  tracing_config: ArizeConfig | PhoenixConfig | LangSmithConfig | LangFuseConfig | OpikConfig | WeaveConfig | AliyunConfig | TencentConfig
+  tracing_config: ArizeConfig | PhoenixConfig | LangSmithConfig | LangFuseConfig | DatabricksConfig | MLflowConfig | OpikConfig | WeaveConfig | AliyunConfig | TencentConfig
 }
 
 export type WebhookTriggerResponse = {

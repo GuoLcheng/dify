@@ -71,18 +71,19 @@ export const stopChatMessageResponding = async (appId: string, taskId: string, a
   return getAction('post', appSourceType)(getUrl(`chat-messages/${taskId}/stop`, appSourceType, installedAppId))
 }
 
-export const sendCompletionMessage = async (body: Record<string, any>, { onData, onCompleted, onError, onMessageReplace }: {
+export const sendCompletionMessage = async (body: Record<string, any>, { onData, onCompleted, onError, onMessageReplace, getAbortController }: {
   onData: IOnData
   onCompleted: IOnCompleted
   onError: IOnError
-  onMessageReplace: IOnMessageReplace
+  onMessageReplace: IOnMessageReplace,
+  getAbortController?: (abortController: AbortController) => void,
 }, appSourceType: AppSourceType, installedAppId = '') => {
   return ssePost(getUrl('completion-messages', appSourceType, installedAppId), {
     body: {
       ...body,
       response_mode: 'streaming',
     },
-  }, { onData, onCompleted, isPublicAPI: getIsPublicAPI(appSourceType), onError, onMessageReplace })
+  }, { onData, onCompleted, isPublicAPI: getIsPublicAPI(appSourceType), onError, onMessageReplace, getAbortController })
 }
 
 export const sendWorkflowMessage = async (
@@ -137,6 +138,12 @@ export const sendWorkflowMessage = async (
     onTextChunk,
     onTextReplace,
   })
+}
+
+export const stopWorkflowMessage = async (_appId: string, taskId: string, isInstalledApp: boolean, installedAppId = '') => {
+  if (!taskId)
+    return
+  return getAction('post', isInstalledApp)(getUrl(`workflows/tasks/${taskId}/stop`, isInstalledApp, installedAppId))
 }
 
 export const fetchAppInfo = async () => {

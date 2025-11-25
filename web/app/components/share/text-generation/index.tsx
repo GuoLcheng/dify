@@ -113,6 +113,12 @@ const TextGeneration: FC<IMainProps> = ({
     transfer_methods: [TransferMethod.local_file],
   })
   const [completionFiles, setCompletionFiles] = useState<VisionFile[]>([])
+  const [runControl, setRunControl] = useState<{ onStop: () => Promise<void> | void; isStopping: boolean } | null>(null)
+
+  useEffect(() => {
+    if (isCallBatchAPI)
+      setRunControl(null)
+  }, [isCallBatchAPI])
 
   const handleSend = () => {
     setIsCallBatchAPI(false)
@@ -405,7 +411,9 @@ const TextGeneration: FC<IMainProps> = ({
     isPC={isPC}
     isMobile={!isPC}
     appSourceType={isInstalledApp ? AppSourceType.installedApp : AppSourceType.webApp}
-    appId={installedAppInfo?.id}
+    isInstalledApp={isInstalledApp}
+    appId={installedAppInfo?.id || appId}
+    installedAppInfo={installedAppInfo}
     isError={task?.status === TaskStatus.failed}
     promptConfig={promptConfig}
     moreLikeThisEnabled={!!moreLikeThisConfig?.enabled}
@@ -422,6 +430,8 @@ const TextGeneration: FC<IMainProps> = ({
     isShowTextToSpeech={!!textToSpeechConfig?.enabled}
     siteInfo={siteInfo}
     onRunStart={() => setResultExisted(true)}
+    onRunControlChange={!isCallBatchAPI ? setRunControl : undefined}
+    hideInlineStopButton={!isCallBatchAPI}
   />)
 
   const renderBatchRes = () => {
@@ -553,6 +563,7 @@ const TextGeneration: FC<IMainProps> = ({
               onSend={handleSend}
               visionConfig={visionConfig}
               onVisionFilesChange={setCompletionFiles}
+              runControl={runControl}
             />
           </div>
           <div className={cn(isInBatchTab ? 'block' : 'hidden')}>
