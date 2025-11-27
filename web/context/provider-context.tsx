@@ -17,8 +17,8 @@ import {
 } from '@/app/components/header/account-setting/model-provider-page/declarations'
 import type { Model, ModelProvider } from '@/app/components/header/account-setting/model-provider-page/declarations'
 import type { RETRIEVE_METHOD } from '@/types/app'
-import type { BasicPlan } from '@/app/components/billing/type'
-import { Plan, type UsagePlanInfo } from '@/app/components/billing/type'
+import type { Plan, UsageResetInfo } from '@/app/components/billing/type'
+import type { UsagePlanInfo } from '@/app/components/billing/type'
 import { fetchCurrentPlanInfo } from '@/service/billing'
 import { parseCurrentPlan } from '@/app/components/billing/utils'
 import { defaultPlan } from '@/app/components/billing/config'
@@ -37,9 +37,10 @@ type ProviderContextState = {
   supportRetrievalMethods: RETRIEVE_METHOD[]
   isAPIKeySet: boolean
   plan: {
-    type: BasicPlan
+    type: Plan
     usage: UsagePlanInfo
     total: UsagePlanInfo
+    reset: UsageResetInfo
   }
   isFetchedPlan: boolean
   enableBilling: boolean
@@ -63,6 +64,7 @@ type ProviderContextState = {
   },
   refreshLicenseLimit: () => void
   isAllowTransferWorkspace: boolean
+  isAllowPublishAsCustomKnowledgePipelineTemplate: boolean
 }
 const ProviderContext = createContext<ProviderContextState>({
   modelProviders: [],
@@ -70,23 +72,7 @@ const ProviderContext = createContext<ProviderContextState>({
   textGenerationModelList: [],
   supportRetrievalMethods: [],
   isAPIKeySet: true,
-  plan: {
-    type: Plan.sandbox,
-    usage: {
-      vectorSpace: 32,
-      buildApps: 12,
-      teamMembers: 1,
-      annotatedResponse: 1,
-      documentsUploadQuota: 50,
-    },
-    total: {
-      vectorSpace: 200,
-      buildApps: 50,
-      teamMembers: 1,
-      annotatedResponse: 10,
-      documentsUploadQuota: 500,
-    },
-  },
+  plan: defaultPlan,
   isFetchedPlan: false,
   enableBilling: false,
   onPlanInfoChanged: noop,
@@ -109,6 +95,7 @@ const ProviderContext = createContext<ProviderContextState>({
   },
   refreshLicenseLimit: noop,
   isAllowTransferWorkspace: false,
+  isAllowPublishAsCustomKnowledgePipelineTemplate: false,
 })
 
 export const useProviderContext = () => useContext(ProviderContext)
@@ -147,6 +134,7 @@ export const ProviderContextProvider = ({
   const [isEducationWorkspace, setIsEducationWorkspace] = useState(false)
   const { data: educationAccountInfo, isLoading: isLoadingEducationAccountInfo, isFetching: isFetchingEducationAccountInfo } = useEducationStatus(!enableEducationPlan)
   const [isAllowTransferWorkspace, setIsAllowTransferWorkspace] = useState(false)
+  const [isAllowPublishAsCustomKnowledgePipelineTemplate, setIsAllowPublishAsCustomKnowledgePipelineTemplate] = useState(false)
 
   const fetchPlan = async () => {
     try {
@@ -177,6 +165,8 @@ export const ProviderContextProvider = ({
         setLicenseLimit({ workspace_members: data.workspace_members })
       if (data.is_allow_transfer_workspace)
         setIsAllowTransferWorkspace(data.is_allow_transfer_workspace)
+      if (data.knowledge_pipeline?.publish_enabled)
+        setIsAllowPublishAsCustomKnowledgePipelineTemplate(data.knowledge_pipeline?.publish_enabled)
     }
     catch (error) {
       console.error('Failed to fetch plan info:', error)
@@ -253,6 +243,7 @@ export const ProviderContextProvider = ({
       licenseLimit,
       refreshLicenseLimit: fetchPlan,
       isAllowTransferWorkspace,
+      isAllowPublishAsCustomKnowledgePipelineTemplate,
     }}>
       {children}
     </ProviderContext.Provider>

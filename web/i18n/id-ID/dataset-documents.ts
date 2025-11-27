@@ -81,6 +81,10 @@ const translation = {
     learnMore: 'Pelajari lebih lanjut',
     addUrl: 'Tambahkan URL',
     title: 'Dokumen',
+    sort: {
+      uploadTime: 'Waktu Unggah',
+      hitCount: 'Jumlah Pengambilan',
+    },
   },
   metadata: {
     placeholder: {
@@ -91,6 +95,9 @@ const translation = {
       notion: 'Sinkronkan formulir Notion',
       upload_file: 'Unggah File',
       github: 'Sinkronkan formulir Github',
+      website_crawl: 'Perayapan Situs Web',
+      online_document: 'Dokumen Online',
+      local_file: 'File Lokal',
     },
     type: {
       book: 'Buku',
@@ -335,6 +342,7 @@ const translation = {
     stop: 'Hentikan pemrosesan',
     custom: 'Adat',
     resume: 'Melanjutkan',
+    waiting: 'Menunggu embedding...',
   },
   segment: {
     searchResults_one: 'HASIL',

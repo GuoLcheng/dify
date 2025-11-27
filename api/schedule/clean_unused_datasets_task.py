@@ -1,6 +1,6 @@
 import datetime
 import time
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import click
 from sqlalchemy import func, select
@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 import app
 from configs import dify_config
 from core.rag.index_processor.index_processor_factory import IndexProcessorFactory
+from enums.cloud_plan import CloudPlan
 from extensions.ext_database import db
 from extensions.ext_redis import redis_client
 from models.dataset import Dataset, DatasetAutoDisableLog, DatasetQuery, Document
@@ -17,7 +18,7 @@ from services.feature_service import FeatureService
 
 class CleanupConfig(TypedDict):
     clean_day: datetime.datetime
-    plan_filter: Optional[str]
+    plan_filter: str | None
     add_logs: bool
 
 
@@ -35,7 +36,7 @@ def clean_unused_datasets_task():
         },
         {
             "clean_day": datetime.datetime.now() - datetime.timedelta(days=dify_config.PLAN_PRO_CLEAN_DAY_SETTING),
-            "plan_filter": "sandbox",
+            "plan_filter": CloudPlan.SANDBOX,
             "add_logs": False,
         },
     ]

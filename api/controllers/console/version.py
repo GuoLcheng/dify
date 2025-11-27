@@ -1,30 +1,30 @@
 import json
 import logging
 
-import requests
+import httpx
 from flask_restx import Resource, fields, reqparse
 from packaging import version
 
 from configs import dify_config
 
-from . import api, console_ns
+from . import console_ns
 
 logger = logging.getLogger(__name__)
+
+parser = reqparse.RequestParser().add_argument(
+    "current_version", type=str, required=True, location="args", help="Current application version"
+)
 
 
 @console_ns.route("/version")
 class VersionApi(Resource):
-    @api.doc("check_version_update")
-    @api.doc(description="Check for application version updates")
-    @api.expect(
-        api.parser().add_argument(
-            "current_version", type=str, required=True, location="args", help="Current application version"
-        )
-    )
-    @api.response(
+    @console_ns.doc("check_version_update")
+    @console_ns.doc(description="Check for application version updates")
+    @console_ns.expect(parser)
+    @console_ns.response(
         200,
         "Success",
-        api.model(
+        console_ns.model(
             "VersionResponse",
             {
                 "version": fields.String(description="Latest version number"),
@@ -37,8 +37,6 @@ class VersionApi(Resource):
     )
     def get(self):
         """Check for application version updates"""
-        parser = reqparse.RequestParser()
-        parser.add_argument("current_version", type=str, required=True, location="args")
         args = parser.parse_args()
         check_update_url = dify_config.CHECK_UPDATE_URL
 
@@ -57,7 +55,11 @@ class VersionApi(Resource):
             return result
 
         try:
-            response = requests.get(check_update_url, {"current_version": args["current_version"]}, timeout=(3, 10))
+            response = httpx.get(
+                check_update_url,
+                params={"current_version": args["current_version"]},
+                timeout=httpx.Timeout(connect=3, read=10),
+            )
         except Exception as error:
             logger.warning("Check update version error: %s.", str(error))
             result["version"] = args["current_version"]

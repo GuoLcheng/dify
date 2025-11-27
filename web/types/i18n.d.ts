@@ -17,6 +17,7 @@ type CustomMessages = typeof import('../i18n/en-US/custom').default
 type DatasetCreationMessages = typeof import('../i18n/en-US/dataset-creation').default
 type DatasetDocumentsMessages = typeof import('../i18n/en-US/dataset-documents').default
 type DatasetHitTestingMessages = typeof import('../i18n/en-US/dataset-hit-testing').default
+type DatasetPipelineMessages = typeof import('../i18n/en-US/dataset-pipeline').default
 type DatasetSettingsMessages = typeof import('../i18n/en-US/dataset-settings').default
 type DatasetMessages = typeof import('../i18n/en-US/dataset').default
 type EducationMessages = typeof import('../i18n/en-US/education').default
@@ -24,7 +25,9 @@ type ExploreMessages = typeof import('../i18n/en-US/explore').default
 type LayoutMessages = typeof import('../i18n/en-US/layout').default
 type LoginMessages = typeof import('../i18n/en-US/login').default
 type OauthMessages = typeof import('../i18n/en-US/oauth').default
+type PipelineMessages = typeof import('../i18n/en-US/pipeline').default
 type PluginTagsMessages = typeof import('../i18n/en-US/plugin-tags').default
+type PluginTriggerMessages = typeof import('../i18n/en-US/plugin-trigger').default
 type PluginMessages = typeof import('../i18n/en-US/plugin').default
 type RegisterMessages = typeof import('../i18n/en-US/register').default
 type RunLogMessages = typeof import('../i18n/en-US/run-log').default
@@ -47,6 +50,7 @@ export type Messages = {
   datasetCreation: DatasetCreationMessages;
   datasetDocuments: DatasetDocumentsMessages;
   datasetHitTesting: DatasetHitTestingMessages;
+  datasetPipeline: DatasetPipelineMessages;
   datasetSettings: DatasetSettingsMessages;
   dataset: DatasetMessages;
   education: EducationMessages;
@@ -54,7 +58,9 @@ export type Messages = {
   layout: LayoutMessages;
   login: LoginMessages;
   oauth: OauthMessages;
+  pipeline: PipelineMessages;
   pluginTags: PluginTagsMessages;
+  pluginTrigger: PluginTriggerMessages;
   plugin: PluginMessages;
   register: RegisterMessages;
   runLog: RunLogMessages;

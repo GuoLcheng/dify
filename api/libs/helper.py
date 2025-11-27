@@ -24,7 +24,7 @@ from core.model_runtime.utils.encoders import jsonable_encoder
 from extensions.ext_redis import redis_client
 
 if TYPE_CHECKING:
-    from models.account import Account
+    from models import Account
     from models.model import EndUser
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def extract_tenant_id(user: Union["Account", "EndUser"]) -> str | None:
     Raises:
         ValueError: If user is neither Account nor EndUser
     """
-    from models.account import Account
+    from models import Account
     from models.model import EndUser
 
     if isinstance(user, Account):
@@ -68,7 +68,7 @@ class AppIconUrlField(fields.Raw):
         if isinstance(obj, dict) and "app" in obj:
             obj = obj["app"]
 
-        if isinstance(obj, App | Site) and obj.icon_type == IconType.IMAGE.value:
+        if isinstance(obj, App | Site) and obj.icon_type == IconType.IMAGE:
             return file_helpers.get_signed_file_url(obj.icon)
         return None
 
@@ -78,9 +78,11 @@ class AvatarUrlField(fields.Raw):
         if obj is None:
             return None
 
-        from models.account import Account
+        from models import Account
 
         if isinstance(obj, Account) and obj.avatar is not None:
+            if obj.avatar.startswith(("http://", "https://")):
+                return obj.avatar
             return file_helpers.get_signed_file_url(obj.avatar)
         return None
 
@@ -173,6 +175,15 @@ def timezone(timezone_string):
 
     error = f"{timezone_string} is not a valid timezone."
     raise ValueError(error)
+
+
+def convert_datetime_to_date(field, target_timezone: str = ":tz"):
+    if dify_config.DB_TYPE == "postgresql":
+        return f"DATE(DATE_TRUNC('day', {field} AT TIME ZONE 'UTC' AT TIME ZONE {target_timezone}))"
+    elif dify_config.DB_TYPE == "mysql":
+        return f"DATE(CONVERT_TZ({field}, 'UTC', {target_timezone}))"
+    else:
+        raise NotImplementedError(f"Unsupported database type: {dify_config.DB_TYPE}")
 
 
 def generate_string(n):
@@ -269,8 +280,8 @@ class TokenManager:
         cls,
         token_type: str,
         account: Optional["Account"] = None,
-        email: Optional[str] = None,
-        additional_data: Optional[dict] = None,
+        email: str | None = None,
+        additional_data: dict | None = None,
     ) -> str:
         if account is None and email is None:
             raise ValueError("Account or email must be provided")
@@ -312,19 +323,19 @@ class TokenManager:
         redis_client.delete(token_key)
 
     @classmethod
-    def get_token_data(cls, token: str, token_type: str) -> Optional[dict[str, Any]]:
+    def get_token_data(cls, token: str, token_type: str) -> dict[str, Any] | None:
         key = cls._get_token_key(token, token_type)
         token_data_json = redis_client.get(key)
         if token_data_json is None:
             logger.warning("%s token %s not found with key %s", token_type, token, key)
             return None
-        token_data: Optional[dict[str, Any]] = json.loads(token_data_json)
+        token_data: dict[str, Any] | None = json.loads(token_data_json)
         return token_data
 
     @classmethod
-    def _get_current_token_for_account(cls, account_id: str, token_type: str) -> Optional[str]:
+    def _get_current_token_for_account(cls, account_id: str, token_type: str) -> str | None:
         key = cls._get_account_token_key(account_id, token_type)
-        current_token: Optional[str] = redis_client.get(key)
+        current_token: str | None = redis_client.get(key)
         return current_token
 
     @classmethod

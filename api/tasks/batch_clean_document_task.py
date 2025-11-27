@@ -9,14 +9,14 @@ from core.rag.index_processor.index_processor_factory import IndexProcessorFacto
 from core.tools.utils.web_reader_tool import get_image_upload_file_ids
 from extensions.ext_database import db
 from extensions.ext_storage import storage
-from models.dataset import Dataset, DocumentSegment
+from models.dataset import Dataset, DatasetMetadataBinding, DocumentSegment
 from models.model import UploadFile
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(queue="dataset")
-def batch_clean_document_task(document_ids: list[str], dataset_id: str, doc_form: str, file_ids: list[str]):
+def batch_clean_document_task(document_ids: list[str], dataset_id: str, doc_form: str | None, file_ids: list[str]):
     """
     Clean document when document deleted.
     :param document_ids: document ids
@@ -30,10 +30,17 @@ def batch_clean_document_task(document_ids: list[str], dataset_id: str, doc_form
     start_at = time.perf_counter()
 
     try:
+        if not doc_form:
+            raise ValueError("doc_form is required")
         dataset = db.session.query(Dataset).where(Dataset.id == dataset_id).first()
 
         if not dataset:
             raise Exception("Document has no dataset")
+
+        db.session.query(DatasetMetadataBinding).where(
+            DatasetMetadataBinding.dataset_id == dataset_id,
+            DatasetMetadataBinding.document_id.in_(document_ids),
+        ).delete(synchronize_session=False)
 
         segments = db.session.scalars(
             select(DocumentSegment).where(DocumentSegment.document_id.in_(document_ids))
@@ -69,7 +76,8 @@ def batch_clean_document_task(document_ids: list[str], dataset_id: str, doc_form
                 except Exception:
                     logger.exception("Delete file failed when document deleted, file_id: %s", file.id)
                 db.session.delete(file)
-            db.session.commit()
+
+        db.session.commit()
 
         end_at = time.perf_counter()
         logger.info(

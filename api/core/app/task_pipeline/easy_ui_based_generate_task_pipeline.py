@@ -2,7 +2,7 @@ import logging
 import time
 from collections.abc import Generator
 from threading import Thread
-from typing import Optional, Union, cast
+from typing import Union, cast
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -109,7 +109,7 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
             task_state=self._task_state,
         )
 
-        self._conversation_name_generate_thread: Optional[Thread] = None
+        self._conversation_name_generate_thread: Thread | None = None
 
     def process(
         self,
@@ -121,7 +121,7 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
         if self._application_generate_entity.app_config.app_mode != AppMode.COMPLETION:
             # start generate conversation name thread
             self._conversation_name_generate_thread = self._message_cycle_manager.generate_conversation_name(
-                conversation_id=self._conversation_id, query=self._application_generate_entity.query or ""
+                conversation_id=self._conversation_id, query=self._application_generate_entity.query
             )
 
         generator = self._wrapper_process_stream_response(trace_manager=self._application_generate_entity.trace_manager)
@@ -145,7 +145,7 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
                 if self._task_state.metadata:
                     extras["metadata"] = self._task_state.metadata.model_dump()
                 response: Union[ChatbotAppBlockingResponse, CompletionAppBlockingResponse]
-                if self._conversation_mode == AppMode.COMPLETION.value:
+                if self._conversation_mode == AppMode.COMPLETION:
                     response = CompletionAppBlockingResponse(
                         task_id=self._application_generate_entity.task_id,
                         data=CompletionAppBlockingResponse.Data(
@@ -209,7 +209,7 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
         return None
 
     def _wrapper_process_stream_response(
-        self, trace_manager: Optional[TraceQueueManager] = None
+        self, trace_manager: TraceQueueManager | None = None
     ) -> Generator[StreamResponse, None, None]:
         tenant_id = self._application_generate_entity.app_config.tenant_id
         task_id = self._application_generate_entity.task_id
@@ -252,7 +252,7 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
             yield MessageAudioEndStreamResponse(audio="", task_id=task_id)
 
     def _process_stream_response(
-        self, publisher: Optional[AppGeneratorTTSPublisher], trace_manager: Optional[TraceQueueManager] = None
+        self, publisher: AppGeneratorTTSPublisher | None, trace_manager: TraceQueueManager | None = None
     ) -> Generator[StreamResponse, None, None]:
         """
         Process stream response.
@@ -332,6 +332,12 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
                 if not self._task_state.llm_result.prompt_messages:
                     self._task_state.llm_result.prompt_messages = chunk.prompt_messages
 
+                # Track streaming response times
+                if self._task_state.first_token_time is None:
+                    self._task_state.first_token_time = time.perf_counter()
+                    self._task_state.is_streaming_response = True
+                self._task_state.last_token_time = time.perf_counter()
+
                 # handle output moderation chunk
                 should_direct_answer = self._handle_output_moderation_chunk(cast(str, delta_text))
                 if should_direct_answer:
@@ -362,7 +368,7 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
         if self._conversation_name_generate_thread:
             self._conversation_name_generate_thread.join()
 
-    def _save_message(self, *, session: Session, trace_manager: Optional[TraceQueueManager] = None):
+    def _save_message(self, *, session: Session, trace_manager: TraceQueueManager | None = None):
         """
         Save message.
         :return:
@@ -398,6 +404,18 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
         message.total_price = usage.total_price
         message.currency = usage.currency
         self._task_state.llm_result.usage.latency = message.provider_response_latency
+
+        # Add streaming metrics to usage if available
+        if self._task_state.is_streaming_response and self._task_state.first_token_time:
+            start_time = self.start_at
+            first_token_time = self._task_state.first_token_time
+            last_token_time = self._task_state.last_token_time or first_token_time
+            usage.time_to_first_token = round(first_token_time - start_time, 3)
+            usage.time_to_generate = round(last_token_time - first_token_time, 3)
+
+        # Update metadata with the complete usage info
+        self._task_state.metadata.usage = usage
+
         message.message_metadata = self._task_state.metadata.model_dump_json()
 
         if trace_manager:
@@ -466,14 +484,14 @@ class EasyUIBasedGenerateTaskPipeline(BasedGenerateTaskPipeline):
             task_id=self._application_generate_entity.task_id, id=message_id, answer=answer
         )
 
-    def _agent_thought_to_stream_response(self, event: QueueAgentThoughtEvent) -> Optional[AgentThoughtStreamResponse]:
+    def _agent_thought_to_stream_response(self, event: QueueAgentThoughtEvent) -> AgentThoughtStreamResponse | None:
         """
         Agent thought to stream response.
         :param event: agent thought event
         :return:
         """
         with Session(db.engine, expire_on_commit=False) as session:
-            agent_thought: Optional[MessageAgentThought] = (
+            agent_thought: MessageAgentThought | None = (
                 session.query(MessageAgentThought).where(MessageAgentThought.id == event.agent_thought_id).first()
             )
 

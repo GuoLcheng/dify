@@ -1,6 +1,6 @@
 import uuid
-from typing import Optional
 
+import sqlalchemy as sa
 from flask_login import current_user
 from sqlalchemy import func, select
 from werkzeug.exceptions import NotFound
@@ -12,14 +12,14 @@ from models.model import App, Tag, TagBinding
 
 class TagService:
     @staticmethod
-    def get_tags(tag_type: str, current_tenant_id: str, keyword: Optional[str] = None):
+    def get_tags(tag_type: str, current_tenant_id: str, keyword: str | None = None):
         query = (
             db.session.query(Tag.id, Tag.type, Tag.name, func.count(TagBinding.id).label("binding_count"))
             .outerjoin(TagBinding, Tag.id == TagBinding.tag_id)
             .where(Tag.type == tag_type, Tag.tenant_id == current_tenant_id)
         )
         if keyword:
-            query = query.where(db.and_(Tag.name.ilike(f"%{keyword}%")))
+            query = query.where(sa.and_(Tag.name.ilike(f"%{keyword}%")))
         query = query.group_by(Tag.id, Tag.type, Tag.name, Tag.created_at)
         results: list = query.order_by(Tag.created_at.desc()).all()
         return results
@@ -79,12 +79,12 @@ class TagService:
         if TagService.get_tag_by_tag_name(args["type"], current_user.current_tenant_id, args["name"]):
             raise ValueError("Tag name already exists")
         tag = Tag(
-            id=str(uuid.uuid4()),
             name=args["name"],
             type=args["type"],
             created_by=current_user.id,
             tenant_id=current_user.current_tenant_id,
         )
+        tag.id = str(uuid.uuid4())
         db.session.add(tag)
         db.session.commit()
         return tag

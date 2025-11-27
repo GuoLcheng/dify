@@ -1,6 +1,5 @@
 import logging
 import time
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -50,7 +49,7 @@ class BasedGenerateTaskPipeline:
         if isinstance(e, InvokeAuthorizationError):
             err = InvokeAuthorizationError("Incorrect API key provided")
         elif isinstance(e, InvokeError | ValueError):
-            err = e  # ty: ignore [invalid-assignment]
+            err = e
         else:
             description = getattr(e, "description", None)
             err = Exception(description if description is not None else str(e))
@@ -101,7 +100,7 @@ class BasedGenerateTaskPipeline:
         """
         return PingStreamResponse(task_id=self._application_generate_entity.task_id)
 
-    def _init_output_moderation(self) -> Optional[OutputModeration]:
+    def _init_output_moderation(self) -> OutputModeration | None:
         """
         Init output moderation.
         :return:
@@ -118,7 +117,7 @@ class BasedGenerateTaskPipeline:
             )
         return None
 
-    def handle_output_moderation_when_task_finished(self, completion: str) -> Optional[str]:
+    def handle_output_moderation_when_task_finished(self, completion: str) -> str | None:
         """
         Handle output moderation when task finished.
         :param completion: completion

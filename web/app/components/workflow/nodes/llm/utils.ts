@@ -9,7 +9,9 @@ export const checkNodeValid = (_payload: LLMNodeType) => {
 }
 
 export const getFieldType = (field: Field) => {
-  const { type, items } = field
+  const { type, items, enum: enums } = field
+  if (field.schemaType === 'file') return Type.file
+  if (enums && enums.length > 0) return Type.enumType
   if (type !== Type.array || !items)
     return type
 
