@@ -80,19 +80,9 @@ COPY . /app/api/
 # Download NLTK data and warm tiktoken cache late in the build to reduce rebuild scope
 RUN set -eux; \
     mkdir -p /usr/local/share/nltk_data; \
-    NLTK_DATA=/usr/local/share/nltk_data python - <<'PY'
-import nltk
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('stopwords')
-PY
-    ; \
+    NLTK_DATA=/usr/local/share/nltk_data python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger'); nltk.download('stopwords')"; \
     chmod -R 755 /usr/local/share/nltk_data; \
-    python - <<'PY'
-import tiktoken
-tiktoken.encoding_for_model('gpt2')
-PY
-    ;
+    python -c "import tiktoken; tiktoken.encoding_for_model('gpt2')"
 
 # Copy entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
