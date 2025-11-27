@@ -12,7 +12,7 @@ P = ParamSpec("P")
 R = TypeVar("R")
 from configs import dify_config
 from constants.languages import supported_language
-from controllers.console import console_ns
+from controllers.console import console_ns, api
 from controllers.console.wraps import only_edition_cloud
 from extensions.ext_database import db
 from libs.token import extract_access_token

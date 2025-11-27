@@ -7,7 +7,7 @@ from flask import Response
 from flask_restx import Resource, fields, inputs, marshal, marshal_with, reqparse
 from sqlalchemy.orm import Session
 
-from controllers.console import console_ns
+from controllers.console import console_ns, api
 from controllers.console.app.error import (
     DraftWorkflowNotExist,
 )
@@ -23,7 +23,7 @@ from extensions.ext_database import db
 from factories import variable_factory
 from factories.file_factory import build_from_mapping, build_from_mappings
 from factories.variable_factory import build_segment_with_type
-from libs.login import login_required
+from libs.login import login_required, current_user
 from models import Account, App, AppMode
 from models.workflow import WorkflowDraftVariable
 from services.workflow_draft_variable_service import WorkflowDraftVariableList, WorkflowDraftVariableService

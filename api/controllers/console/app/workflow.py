@@ -51,10 +51,6 @@ from core.workflow.graph_engine.manager import GraphEngineManager
 from extensions.ext_database import db
 from extensions.ext_redis import redis_client
 from factories import file_factory, variable_factory
-<< << << < HEAD
-== == == =
->>>>>> > main
-
 logger = logging.getLogger(__name__)
 LISTENING_RETRY_IN = 2000
 
