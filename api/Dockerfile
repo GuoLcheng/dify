@@ -86,11 +86,13 @@ nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('stopwords')
 PY
+    ; \
     chmod -R 755 /usr/local/share/nltk_data; \
     python - <<'PY'
 import tiktoken
 tiktoken.encoding_for_model('gpt2')
 PY
+    ;
 
 # Copy entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
